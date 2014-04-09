@@ -10,7 +10,7 @@ To see what the QIF file will look like for a statemnt run:
 
 To convert a years worth of statements into QIFs, you can use the following
    
-   for file in `ls ~/Downloads/Monthly_Statement_2013_*.pdf`; do python parse.py $file > ${file}.qif; done
+    for file in `ls ~/Downloads/Monthly_Statement_2013_*.pdf`; do python parse.py $file > ${file}.qif; done
 
 Dependencies
 ============
