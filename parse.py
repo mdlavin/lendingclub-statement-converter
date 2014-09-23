@@ -1,3 +1,4 @@
+from __future__ import print_function
 from pdfminer.layout import LAParams
 from pdfminer.pdfparser import PDFParser
 from pdfminer.converter import PDFPageAggregator
@@ -8,6 +9,7 @@ from pdfminer.pdfinterp import PDFResourceManager
 from pdfminer.pdfinterp import PDFPageInterpreter
 from pdfminer.pdfdevice import PDFDevice
 from fuzzyparsers import parse_date
+from itertools import islice
 import re
 import decimal
 import sys
@@ -22,6 +24,13 @@ splits = {
         "category": "Investments:LendingClub:Outstanding Principal"
     },
     "Loan Interest" : {
+        "section": "CASH DETAILS",
+        "category": "Income:Interest:LendingClub"
+    },
+    # Starting in Aug 2014, the entry 'Loan Interest' was renamed
+    # to 'Interest Received'.  To handle both types of PDFs, search for
+    # either string
+    "Interest Received" : {
         "section": "CASH DETAILS",
         "category": "Income:Interest:LendingClub"
     },
@@ -74,7 +83,7 @@ def readPdf(file):
     # Create a PDF page aggregator object.
     device = PDFPageAggregator(rsrcmgr, laparams=laparams)
     interpreter = PDFPageInterpreter(rsrcmgr, device)
-    for page in PDFPage.create_pages(document):
+    for page in islice(PDFPage.create_pages(document), 2):
         interpreter.process_page(page)
         # receive the LTPage object for the page.
         layout = device.get_result()
@@ -121,11 +130,14 @@ def hasGetText(obj):
 
 def textRightOf(parent, obj):
    return elementRightOf(parent, obj, elementFilter=hasGetText) 
+   
+class MissingTextElementException(Exception):
+    pass
 
 def amountRightOf(obj, text):
     textElement = findTextElement(obj, text)
     if not textElement:
-        raise Exception("The text '%s' was not found" % text)
+        raise MissingTextElementException("The text '%s' was not found" % text)
         
     rightOf = textRightOf(obj, textElement)
     textAmount = rightOf.get_text().strip()
@@ -158,22 +170,26 @@ def findStatementDate(obj):
 def calculateSplitAmounts(obj):
     newSplits = splits.copy()
     for split in splits:
-        newSplits[split] = splits[split].copy()
         pageWithSection = findPageWithSection(obj, splits[split]['section'])
-        newSplits[split]['amount'] = amountRightOf(pageWithSection, split)
-        if newSplits[split]['amount']:
-            if 'sourceCategory' in splits[split]:
-                newSplits[split + " source"] = {
-                    'category': splits[split]['sourceCategory'],
-                    'amount': newSplits[split]['amount'] * -1
-                }
+        try:
+            amount = amountRightOf(pageWithSection, split)
+            newSplits[split] = splits[split].copy()
+            newSplits[split]['amount'] = amount
+            if newSplits[split]['amount']:
+                if 'sourceCategory' in splits[split]:
+                    newSplits[split + " source"] = {
+                        'category': splits[split]['sourceCategory'],
+                        'amount': newSplits[split]['amount'] * -1
+                    }
+        except MissingTextElementException:
+            print("Split %s was not found, so it will be ignored" % split, file=sys.stderr)
     
     return newSplits
     
 def totalSplits(splits):
     total = decimal.Decimal(0)
     for split in splits:
-        if splits[split]['amount']:
+        if 'amount' in splits[split]:
             total += splits[split]['amount']
     return total
         
@@ -187,7 +203,7 @@ date = findStatementDate(findPageWithSection(pdf, "CASH DETAILS"))
 print("D%s" % date.strftime("%m/%d/%Y"))
 print("T%s" % total)
 for split in splits:
-    if splits[split]['amount']:
+    if 'amount' in splits[split]:
         splitAmount = splits[split]['amount']
         category = splits[split]['category']
         print("S%s" % category)
