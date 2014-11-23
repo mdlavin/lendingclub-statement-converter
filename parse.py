@@ -42,6 +42,10 @@ splits = {
         "section": "CASH DETAILS",
         "category": "Expenses:Bank Charges:Collection Fees:LendingClub"
     },
+    "Recovery Fees" : {
+        "section": "CASH DETAILS",
+        "category": "Expenses:Bank Charges:Recovery Fees:LendingClub"
+    },
     "Recoveries" : {
         "section": "CASH DETAILS",
         "category": "Income:LendingClub:Recoveries"
@@ -156,7 +160,7 @@ def amountRightOf(obj, text):
     textAmount = textAmount.replace(',','')
     
     if textAmount == "-":
-        amount = None
+        amount = decimal.Decimal("0.0")
     else:
         amount = decimal.Decimal(textAmount) * sign
     return amount
