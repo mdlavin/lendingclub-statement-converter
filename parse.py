@@ -38,6 +38,10 @@ splits = {
         "section": "CASH DETAILS",
         "category": "Expenses:Service Fee:LendingClub"
     },
+    "Adjustments/Credits" : {
+        "section": "CASH DETAILS",
+        "category": "Income:LendingClub:Adjustments"
+    },
     "Collection Fees" : {
         "section": "CASH DETAILS",
         "category": "Expenses:Bank Charges:Collection Fees:LendingClub"
