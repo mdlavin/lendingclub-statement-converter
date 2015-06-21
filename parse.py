@@ -169,11 +169,30 @@ def amountRightOf(obj, text):
         amount = decimal.Decimal(textAmount) * sign
     return amount
 
-def findStatementDate(obj):
-    dateRegex = re.compile("(\w+) [0-9][0-9]-([0-9][0-9])\. ([0-9][0-9][0-9][0-9])")
+class DateNotFoundException(Exception):
+    pass
+
+def findStatementDate_pre201504(obj):
+    dateRegex = re.compile("(\w+)\s+[0-9][0-9]-([0-9][0-9])\.\s+([0-9][0-9][0-9][0-9])")
     dates = findTextElement(obj, dateRegex)
+    if not dates:
+      raise DateNotFoundException("Old style date not found in page")
     dateMatch = dateRegex.match(dates.get_text().strip())
     return parse_date("%s %s %s" % ( dateMatch.group(1), dateMatch.group(2), dateMatch.group(3)))
+
+def findStatementDate_after201504(obj):
+    dateRegex = re.compile("\w+\s+[0-9][0-9]\s+[0-9][0-9][0-9][0-9]\s+-\s+(\w+)\s+([0-9][0-9])\s+([0-9][0-9][0-9][0-9])")
+    dates = findTextElement(obj, dateRegex)
+    if not dates:
+      raise DateNotFoundException("New style datNew style date not found in page")
+    dateMatch = dateRegex.match(dates.get_text().strip())
+    return parse_date("%s %s %s" % ( dateMatch.group(1), dateMatch.group(2), dateMatch.group(3)))
+
+def findStatementDate(obj):
+    try:
+        return findStatementDate_pre201504(obj)
+    except DateNotFoundException:
+        return findStatementDate_after201504(obj)
 
 def calculateSplitAmounts(obj):
     newSplits = splits.copy()
