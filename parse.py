@@ -19,6 +19,10 @@ splits = {
         "section": "CASH DETAILS",
         "category": "Investments:LendingClub:Outstanding Principal"
     },
+    "Funds Invested" : {
+        "section": "CASH DETAILS",
+        "category": "Investments:LendingClub:Outstanding Principal"
+    },
     "Principal Received" : {
         "section": "CASH DETAILS",
         "category": "Investments:LendingClub:Outstanding Principal"
